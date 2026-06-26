@@ -13,9 +13,11 @@ import {
 } from "@/lib/countries";
 import { useAudioPlayer } from "@/lib/useAudioPlayer";
 import { useIsMobile } from "@/lib/useMediaQuery";
+import { useDominantColor } from "@/lib/useDominantColor";
 import { isWebGLAvailable } from "@/lib/webgl";
 
 import StarField from "@/components/StarField";
+import InteractiveBackdrop from "@/components/InteractiveBackdrop";
 import TopBar from "@/components/TopBar";
 import SpinButton from "@/components/SpinButton";
 import MusicPanel from "@/components/MusicPanel";
@@ -33,6 +35,13 @@ const GlobeScene = dynamic(() => import("@/components/GlobeScene"), {
 export default function Home() {
   const isMobile = useIsMobile();
   const player = useAudioPlayer();
+
+  // Dominant colour of the now-playing art → re-tints the whole scene.
+  const dominant = useDominantColor(player.state.track?.artwork);
+  const accentTriplet = dominant?.triplet ?? "56, 232, 255";
+  useEffect(() => {
+    document.documentElement.style.setProperty("--np-color", accentTriplet);
+  }, [accentTriplet]);
 
   const [selectedCode, setSelectedCode] = useState<string | null>(null);
   const [data, setData] = useState<TopTracksResponse | null>(null);
@@ -229,6 +238,7 @@ export default function Home() {
     <main className="relative h-[100dvh] w-full overflow-hidden">
       {/* Backdrop layers */}
       <div className="app-backdrop" />
+      <InteractiveBackdrop />
       <StarField />
 
       {/* Globe — isolated behind an error boundary so a WebGL/driver failure
@@ -248,6 +258,8 @@ export default function Home() {
               onHover={setHovered}
               onReady={handleGlobeReady}
               handleRef={globeHandle}
+              accentTriplet={accentTriplet}
+              playing={player.state.isPlaying}
             />
           </ErrorBoundary>
         </motion.div>

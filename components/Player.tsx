@@ -1,10 +1,12 @@
 "use client";
 
-import { useRef } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import { useEffect, useRef, useState } from "react";
+import { motion, AnimatePresence, useReducedMotion } from "framer-motion";
 import type { AudioState } from "@/lib/useAudioPlayer";
 import Equalizer from "./Equalizer";
 import StreamingLinks from "./StreamingLinks";
+
+const NOTES = ["♪", "♫", "♬", "♩", "♪"];
 
 interface PlayerProps {
   state: AudioState;
@@ -38,8 +40,26 @@ export default function Player({
   onClose,
 }: PlayerProps) {
   const barRef = useRef<HTMLDivElement>(null);
+  const reduce = useReducedMotion();
   const { track, isPlaying, isLoading, progress, elapsed, duration, hasEnded } =
     state;
+
+  // Cursor-tracked 3D tilt on the album art.
+  const [tilt, setTilt] = useState({ rx: 0, ry: 0 });
+  const onArtMove = (e: React.PointerEvent) => {
+    if (reduce) return;
+    const r = e.currentTarget.getBoundingClientRect();
+    const px = (e.clientX - r.left) / r.width - 0.5;
+    const py = (e.clientY - r.top) / r.height - 0.5;
+    setTilt({ rx: -py * 16, ry: px * 16 });
+  };
+  const resetTilt = () => setTilt({ rx: 0, ry: 0 });
+
+  // Musical-note burst whenever a new track starts.
+  const [burst, setBurst] = useState(0);
+  useEffect(() => {
+    if (track && isPlaying && !reduce) setBurst((b) => b + 1);
+  }, [track?.id, isPlaying, reduce]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleScrub = (clientX: number) => {
     const el = barRef.current;
@@ -59,30 +79,78 @@ export default function Player({
           transition={{ type: "spring", stiffness: 280, damping: 26 }}
           className={
             isMobile
-              ? "glass-strong fixed inset-x-3 bottom-3 z-40 rounded-2xl p-3 shadow-glass"
-              : "glass-strong fixed bottom-6 left-6 z-40 w-[380px] max-w-[calc(100vw-3rem)] rounded-2xl p-3.5 shadow-glass"
+              ? "glass-strong np-aura fixed inset-x-3 bottom-[max(0.75rem,env(safe-area-inset-bottom))] z-40 rounded-2xl p-3"
+              : "glass-strong np-aura fixed bottom-6 left-6 z-40 w-[380px] max-w-[calc(100vw-3rem)] rounded-2xl p-3.5"
           }
-          style={{ boxShadow: "0 0 40px -10px rgba(56,232,255,0.35), 0 12px 40px -12px rgba(0,0,0,0.7)" }}
         >
           <div className="flex items-center gap-3">
-            {/* Album art with pulsing glow */}
-            <div className="relative shrink-0">
+            {/* Album art with dynamic glow, cursor tilt + note burst */}
+            <div
+              className="relative shrink-0"
+              style={{ perspective: 500 }}
+              onPointerMove={onArtMove}
+              onPointerLeave={resetTilt}
+            >
               <div
-                className="absolute -inset-1 rounded-2xl opacity-70 blur-md"
+                className="absolute -inset-1.5 rounded-2xl opacity-80 blur-md"
                 style={{
                   background:
-                    "radial-gradient(circle, rgba(56,232,255,0.55), transparent 70%)",
-                  animation: isPlaying ? "pulse-glow 2.4s ease-in-out infinite" : "none",
+                    "radial-gradient(circle, rgba(var(--np-color), 0.6), transparent 70%)",
+                  animation: isPlaying
+                    ? "pulse-glow 2.4s ease-in-out infinite"
+                    : "none",
                 }}
               />
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                src={track.artwork}
-                alt=""
-                className="relative h-14 w-14 rounded-xl object-cover"
-                draggable={false}
-              />
-              <div className="absolute inset-0 rounded-xl ring-1 ring-inset ring-white/10" />
+              <div
+                className="relative h-14 w-14 transition-transform duration-150 ease-out"
+                style={{
+                  transform: `rotateX(${tilt.rx}deg) rotateY(${tilt.ry}deg)`,
+                  transformStyle: "preserve-3d",
+                }}
+              >
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={track.artwork}
+                  alt=""
+                  className="h-14 w-14 rounded-xl object-cover"
+                  draggable={false}
+                />
+                <div className="absolute inset-0 rounded-xl ring-1 ring-inset ring-white/15" />
+                {/* Glare */}
+                <div
+                  className="pointer-events-none absolute inset-0 rounded-xl"
+                  style={{
+                    background: `linear-gradient(${
+                      125 + tilt.ry * 3
+                    }deg, rgba(255,255,255,0.28), transparent 45%)`,
+                  }}
+                />
+              </div>
+
+              {/* Floating musical notes on play */}
+              {burst > 0 && !reduce && (
+                <div key={burst} className="pointer-events-none absolute inset-0">
+                  {NOTES.map((n, i) => (
+                    <span
+                      key={i}
+                      className="absolute left-1/2 top-1 text-sm"
+                      style={
+                        {
+                          color: "rgba(var(--np-color), 0.9)",
+                          ["--nx" as string]: `${(i - 2) * 14}px`,
+                          ["--nr" as string]: `${(i - 2) * 18}deg`,
+                          animation: `note-float ${1.5 + i * 0.12}s ease-out ${
+                            i * 0.08
+                          }s forwards`,
+                          opacity: 0,
+                        } as React.CSSProperties
+                      }
+                    >
+                      {n}
+                    </span>
+                  ))}
+                </div>
+              )}
             </div>
 
             {/* Meta + equalizer */}

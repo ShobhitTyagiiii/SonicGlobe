@@ -42,21 +42,34 @@ function upgradeArtwork(url: string | undefined, size = 512): string {
   return url.replace(/\/\d+x\d+bb/, `/${size}x${size}bb`);
 }
 
-/** Fetch JSON with a timeout and Next.js cache hints; throws on non-2xx. */
-async function fetchJson<T>(url: string): Promise<T> {
-  const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), 8000);
-  try {
-    const res = await fetch(url, {
-      signal: controller.signal,
-      headers: { Accept: "application/json" },
-      next: { revalidate: REVALIDATE_SECONDS },
-    });
-    if (!res.ok) throw new Error(`Upstream ${res.status} for ${url}`);
-    return (await res.json()) as T;
-  } finally {
-    clearTimeout(timeout);
+/**
+ * Fetch JSON with a per-attempt timeout, Next.js cache hints, and a couple of
+ * retries — so a single transient hiccup (cold start, brief Apple blip) never
+ * surfaces as an error to the user.
+ */
+async function fetchJson<T>(url: string, attempts = 3): Promise<T> {
+  let lastErr: unknown;
+  for (let i = 0; i < attempts; i++) {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 9000);
+    try {
+      const res = await fetch(url, {
+        signal: controller.signal,
+        headers: { Accept: "application/json" },
+        next: { revalidate: REVALIDATE_SECONDS },
+      });
+      if (!res.ok) throw new Error(`Upstream ${res.status} for ${url}`);
+      return (await res.json()) as T;
+    } catch (e) {
+      lastErr = e;
+      if (i < attempts - 1) {
+        await new Promise((r) => setTimeout(r, 300 * (i + 1)));
+      }
+    } finally {
+      clearTimeout(timeout);
+    }
   }
+  throw lastErr;
 }
 
 /**

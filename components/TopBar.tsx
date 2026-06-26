@@ -18,7 +18,7 @@ export default function TopBar() {
           <span className="absolute inset-0 rounded-full bg-accent/20 blur-md" />
           <span className="relative text-2xl">🌐</span>
         </span>
-        <h1 className="font-display text-xl font-bold tracking-tight text-gradient sm:text-3xl">
+        <h1 className="font-display text-xl font-bold tracking-tight text-flow sm:text-3xl">
           Sonic Globe
         </h1>
       </div>

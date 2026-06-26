@@ -65,7 +65,30 @@ export default function StarField() {
       ctx.globalAlpha = 1;
     };
 
+    // Occasional shooting stars.
+    type Meteor = { x: number; y: number; vx: number; vy: number; len: number; life: number; max: number };
+    let meteors: Meteor[] = [];
+    let nextMeteor = 1200;
+
+    const spawnMeteor = () => {
+      const speed = 9 + Math.random() * 6;
+      const angle = Math.PI * (0.18 + Math.random() * 0.12); // shallow diagonal
+      meteors.push({
+        x: Math.random() * width * 0.7,
+        y: Math.random() * height * 0.4,
+        vx: Math.cos(angle) * speed,
+        vy: Math.sin(angle) * speed,
+        len: 90 + Math.random() * 80,
+        life: 0,
+        max: 60 + Math.random() * 30,
+      });
+    };
+
+    let last = performance.now();
+
     const render = (t: number) => {
+      const dt = t - last;
+      last = t;
       ctx.clearRect(0, 0, width, height);
       for (const s of stars) {
         const tw = 0.5 + 0.5 * Math.sin(t * 0.001 * s.twinkleSpeed + s.phase);
@@ -82,6 +105,39 @@ export default function StarField() {
           s.x = Math.random() * width;
         }
       }
+
+      // Shooting stars
+      nextMeteor -= dt;
+      if (nextMeteor <= 0) {
+        spawnMeteor();
+        nextMeteor = 2600 + Math.random() * 4200;
+      }
+      for (const m of meteors) {
+        m.x += m.vx;
+        m.y += m.vy;
+        m.life += 1;
+        const fade = Math.sin((m.life / m.max) * Math.PI); // ease in/out
+        const tailX = m.x - (m.vx / Math.hypot(m.vx, m.vy)) * m.len;
+        const tailY = m.y - (m.vy / Math.hypot(m.vx, m.vy)) * m.len;
+        const grad = ctx.createLinearGradient(m.x, m.y, tailX, tailY);
+        grad.addColorStop(0, `rgba(180,240,255,${0.9 * fade})`);
+        grad.addColorStop(1, "rgba(180,240,255,0)");
+        ctx.strokeStyle = grad;
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.moveTo(m.x, m.y);
+        ctx.lineTo(tailX, tailY);
+        ctx.stroke();
+        // bright head
+        ctx.globalAlpha = fade;
+        ctx.fillStyle = "#eafcff";
+        ctx.beginPath();
+        ctx.arc(m.x, m.y, 1.6, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.globalAlpha = 1;
+      }
+      meteors = meteors.filter((m) => m.life < m.max && m.x < width + 50 && m.y < height + 50);
+
       ctx.globalAlpha = 1;
       raf = requestAnimationFrame(render);
     };

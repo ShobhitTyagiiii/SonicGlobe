@@ -106,7 +106,7 @@ export default function MusicPanel({
           }}
           className={
             isMobile
-              ? "glass-strong glass-edge fixed inset-x-0 bottom-0 z-30 flex max-h-[78vh] flex-col overflow-hidden rounded-t-3xl shadow-glass"
+              ? "glass-strong glass-edge fixed inset-x-0 bottom-0 z-30 flex max-h-[64vh] flex-col overflow-hidden rounded-t-3xl shadow-glass"
               : "glass-strong glass-edge fixed inset-y-0 right-0 z-30 flex w-[400px] max-w-[90vw] flex-col overflow-hidden shadow-glass"
           }
           style={{ touchAction: isMobile ? "none" : undefined }}

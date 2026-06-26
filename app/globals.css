@@ -4,6 +4,9 @@
 
 :root {
   color-scheme: dark;
+  /* Now-playing accent as an RGB triplet. Defaults to electric cyan; gets
+     overwritten with the dominant colour of the active album art. */
+  --np-color: 56, 232, 255;
 }
 
 html,
@@ -129,6 +132,88 @@ body {
 }
 .globe-host canvas:active {
   cursor: grabbing;
+}
+
+/* ---- Flowing gradient wordmark ---- */
+.text-flow {
+  background: linear-gradient(
+    100deg,
+    #ffffff 0%,
+    #9af6ff 20%,
+    #38e8ff 40%,
+    #ff5db1 55%,
+    #9af6ff 75%,
+    #ffffff 100%
+  );
+  background-size: 250% 100%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  animation: text-flow 9s ease-in-out infinite;
+}
+@keyframes text-flow {
+  0%,
+  100% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+}
+
+/* ---- Now-playing aura that breathes (uses dynamic album colour) ---- */
+.np-aura {
+  box-shadow:
+    0 0 40px -8px rgba(var(--np-color), 0.55),
+    0 0 90px -20px rgba(var(--np-color), 0.4);
+  animation: np-breathe 3.4s ease-in-out infinite;
+}
+@keyframes np-breathe {
+  0%,
+  100% {
+    box-shadow:
+      0 0 36px -10px rgba(var(--np-color), 0.45),
+      0 0 80px -24px rgba(var(--np-color), 0.32);
+  }
+  50% {
+    box-shadow:
+      0 0 56px -6px rgba(var(--np-color), 0.7),
+      0 0 120px -16px rgba(var(--np-color), 0.5);
+  }
+}
+
+/* ---- Floating musical notes (burst on play) ---- */
+@keyframes note-float {
+  0% {
+    transform: translate(0, 0) scale(0.5) rotate(0deg);
+    opacity: 0;
+  }
+  15% {
+    opacity: 1;
+  }
+  100% {
+    transform: translate(var(--nx, 0), -96px) scale(1.05) rotate(var(--nr, 0deg));
+    opacity: 0;
+  }
+}
+
+/* ---- Click ripple ---- */
+@keyframes ripple-out {
+  from {
+    transform: scale(0);
+    opacity: 0.55;
+  }
+  to {
+    transform: scale(2.8);
+    opacity: 0;
+  }
+}
+
+/* ---- Conic sheen sweep (buttons / cards) ---- */
+@keyframes sheen {
+  to {
+    transform: translateX(220%) rotate(8deg);
+  }
 }
 
 /* ---- Reduced motion: tone everything down ---- */
