@@ -1,0 +1,144 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color-scheme: dark;
+}
+
+html,
+body {
+  height: 100%;
+}
+
+body {
+  background: #05060f;
+  color: #eaf2ff;
+  overflow: hidden; /* the globe owns the viewport; panels scroll internally */
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+/* ---- Deep-space backdrop: layered radial nebula behind everything ---- */
+.app-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  background:
+    radial-gradient(120% 80% at 18% 12%, rgba(56, 232, 255, 0.10), transparent 55%),
+    radial-gradient(100% 90% at 88% 90%, rgba(255, 93, 177, 0.10), transparent 55%),
+    radial-gradient(140% 120% at 50% 50%, #0a0d20 0%, #05060f 70%);
+}
+
+/* ---- Glassmorphism ---- */
+.glass {
+  background: linear-gradient(
+    180deg,
+    rgba(255, 255, 255, 0.07),
+    rgba(255, 255, 255, 0.025)
+  );
+  backdrop-filter: blur(22px) saturate(140%);
+  -webkit-backdrop-filter: blur(22px) saturate(140%);
+  border: 1px solid rgba(255, 255, 255, 0.10);
+}
+
+.glass-strong {
+  background: linear-gradient(
+    180deg,
+    rgba(12, 15, 34, 0.78),
+    rgba(8, 10, 24, 0.88)
+  );
+  backdrop-filter: blur(26px) saturate(150%);
+  -webkit-backdrop-filter: blur(26px) saturate(150%);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+/* Thin glowing top edge used on panels */
+.glass-edge::before {
+  content: "";
+  position: absolute;
+  inset: 0 0 auto 0;
+  height: 1px;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(56, 232, 255, 0.5),
+    transparent
+  );
+}
+
+/* ---- Custom scrollbar ---- */
+.scroll-fade {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(56, 232, 255, 0.35) transparent;
+}
+.scroll-fade::-webkit-scrollbar {
+  width: 8px;
+}
+.scroll-fade::-webkit-scrollbar-track {
+  background: transparent;
+}
+.scroll-fade::-webkit-scrollbar-thumb {
+  background: rgba(56, 232, 255, 0.28);
+  border-radius: 99px;
+  border: 2px solid transparent;
+  background-clip: padding-box;
+}
+.scroll-fade::-webkit-scrollbar-thumb:hover {
+  background: rgba(56, 232, 255, 0.5);
+  background-clip: padding-box;
+}
+
+/* Gradient text used for the wordmark */
+.text-gradient {
+  background: linear-gradient(95deg, #ffffff 0%, #9af6ff 45%, #38e8ff 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+/* Shimmer skeleton */
+.skeleton {
+  position: relative;
+  overflow: hidden;
+  background: rgba(255, 255, 255, 0.05);
+}
+.skeleton::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  transform: translateX(-100%);
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(255, 255, 255, 0.08),
+    transparent
+  );
+  animation: skeleton-shimmer 1.6s infinite;
+}
+@keyframes skeleton-shimmer {
+  100% {
+    transform: translateX(100%);
+  }
+}
+
+/* Globe canvas should never block its own pointer styling */
+.globe-host canvas {
+  outline: none;
+  cursor: grab;
+}
+.globe-host canvas:active {
+  cursor: grabbing;
+}
+
+/* ---- Reduced motion: tone everything down ---- */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
+}
