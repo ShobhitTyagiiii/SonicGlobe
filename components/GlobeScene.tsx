@@ -366,7 +366,8 @@ export default function GlobeScene({
   const [arcSeed, setArcSeed] = useState(0);
   useEffect(() => {
     if (reduce) return;
-    const id = setInterval(() => setArcSeed((s) => s + 1), 4500);
+    // Long interval so arcs glide to completion before being refreshed.
+    const id = setInterval(() => setArcSeed((s) => s + 1), 11000);
     return () => clearInterval(id);
   }, [reduce]);
 
@@ -386,7 +387,8 @@ export default function GlobeScene({
         endLat: b.lat,
         endLng: b.lng,
         color: ["rgba(56, 232, 255, 0.1)", "rgba(122, 243, 255, 0.85)"],
-        speed: 1600 + Math.random() * 2000,
+        // Slow, gentle glide (ms for the dash to travel the arc).
+        speed: 5500 + Math.random() * 4000,
       });
     }
 
@@ -408,7 +410,7 @@ export default function GlobeScene({
               `rgba(${accentTriplet}, 0.05)`,
               `rgba(${accentTriplet}, 0.9)`,
             ],
-            speed: 1300 + Math.random() * 1400,
+            speed: 4500 + Math.random() * 3000,
           });
         }
       }
