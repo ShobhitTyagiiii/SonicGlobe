@@ -58,6 +58,8 @@ interface ArcDatum {
   endLng: number;
   color: [string, string];
   speed: number;
+  /** Precomputed once so re-renders don't re-randomise (and restart) the arc. */
+  initialGap: number;
 }
 
 const ACCENT = "#38e8ff";
@@ -389,6 +391,7 @@ export default function GlobeScene({
         color: ["rgba(56, 232, 255, 0.1)", "rgba(122, 243, 255, 0.8)"],
         // Slow, gentle glide (ms for the dash to travel the arc).
         speed: 9000 + Math.random() * 6000,
+        initialGap: Math.random(),
       });
     }
 
@@ -411,6 +414,7 @@ export default function GlobeScene({
               `rgba(${accentTriplet}, 0.85)`,
             ],
             speed: 7500 + Math.random() * 4000,
+            initialGap: Math.random(),
           });
         }
       }
@@ -472,9 +476,9 @@ export default function GlobeScene({
           arcStroke={0.7}
           arcAltitudeAutoScale={0.5}
           arcDashLength={0.5}
-          arcDashGap={0.45}
-          arcDashInitialGap={() => Math.random()}
-          arcDashAnimateTime={(d: object) => (d as ArcDatum).speed}
+          arcDashGap={0.7}
+          arcDashInitialGap="initialGap"
+          arcDashAnimateTime="speed"
           arcsTransitionDuration={0}
           // Selected-country pulse — bigger + faster while a song plays
           ringsData={ringsData}
