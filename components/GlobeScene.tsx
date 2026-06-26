@@ -113,7 +113,7 @@ export default function GlobeScene({
       setBeat(false);
       return;
     }
-    const id = setInterval(() => setBeat((b) => !b), 480);
+    const id = setInterval(() => setBeat((b) => !b), 700);
     return () => clearInterval(id);
   }, [playing, reduce]);
 
@@ -367,7 +367,7 @@ export default function GlobeScene({
   useEffect(() => {
     if (reduce) return;
     // Long interval so arcs glide to completion before being refreshed.
-    const id = setInterval(() => setArcSeed((s) => s + 1), 11000);
+    const id = setInterval(() => setArcSeed((s) => s + 1), 17000);
     return () => clearInterval(id);
   }, [reduce]);
 
@@ -377,7 +377,7 @@ export default function GlobeScene({
     const arcs: ArcDatum[] = [];
 
     // Ambient cyan arcs.
-    for (let i = 0; i < 9; i++) {
+    for (let i = 0; i < 6; i++) {
       const a = pick();
       const b = pick();
       if (a.code === b.code) continue;
@@ -386,9 +386,9 @@ export default function GlobeScene({
         startLng: a.lng,
         endLat: b.lat,
         endLng: b.lng,
-        color: ["rgba(56, 232, 255, 0.1)", "rgba(122, 243, 255, 0.85)"],
+        color: ["rgba(56, 232, 255, 0.1)", "rgba(122, 243, 255, 0.8)"],
         // Slow, gentle glide (ms for the dash to travel the arc).
-        speed: 5500 + Math.random() * 4000,
+        speed: 9000 + Math.random() * 6000,
       });
     }
 
@@ -408,9 +408,9 @@ export default function GlobeScene({
             endLng: tgt.lng,
             color: [
               `rgba(${accentTriplet}, 0.05)`,
-              `rgba(${accentTriplet}, 0.9)`,
+              `rgba(${accentTriplet}, 0.85)`,
             ],
-            speed: 4500 + Math.random() * 3000,
+            speed: 7500 + Math.random() * 4000,
           });
         }
       }
@@ -421,7 +421,7 @@ export default function GlobeScene({
   }, [countries, selectedCode, reduce, accentTriplet, arcSeed]);
 
   // Match the polygon tween to the heartbeat so the pop pulses smoothly.
-  const transition = reduce ? 0 : playing && selectedCode ? 440 : 250;
+  const transition = reduce ? 0 : playing && selectedCode ? 680 : 250;
 
   return (
     <div
@@ -483,9 +483,9 @@ export default function GlobeScene({
           ringColor={() => (t: number) =>
             `rgba(${accentTriplet}, ${Math.max(0, 1 - t)})`
           }
-          ringMaxRadius={playing ? 7 : 4.5}
-          ringPropagationSpeed={playing ? 4 : 2.4}
-          ringRepeatPeriod={playing ? 620 : 950}
+          ringMaxRadius={5}
+          ringPropagationSpeed={1.4}
+          ringRepeatPeriod={2400}
           ringAltitude={0.013}
         />
       )}
