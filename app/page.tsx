@@ -13,6 +13,7 @@ import {
 } from "@/lib/countries";
 import { useAudioPlayer } from "@/lib/useAudioPlayer";
 import { useIsMobile } from "@/lib/useMediaQuery";
+import { isWebGLAvailable } from "@/lib/webgl";
 
 import StarField from "@/components/StarField";
 import TopBar from "@/components/TopBar";
@@ -20,6 +21,8 @@ import SpinButton from "@/components/SpinButton";
 import MusicPanel from "@/components/MusicPanel";
 import Player from "@/components/Player";
 import LoadingScreen from "@/components/LoadingScreen";
+import ErrorBoundary from "@/components/ErrorBoundary";
+import CountryPicker from "@/components/CountryPicker";
 
 // The globe is heavy + needs the DOM — load it client-only.
 const GlobeScene = dynamic(() => import("@/components/GlobeScene"), {
@@ -39,6 +42,8 @@ export default function Home() {
   const [globeReady, setGlobeReady] = useState(false);
   const [loaderDone, setLoaderDone] = useState(false);
   const [hovered, setHovered] = useState<HoverInfo | null>(null);
+  const [globeFailed, setGlobeFailed] = useState(false);
+  const [pickerOpen, setPickerOpen] = useState(false);
 
   // Refs for use inside async / imperative code paths.
   const globeHandle = useRef<GlobeHandle | null>(null);
@@ -139,6 +144,26 @@ export default function Home() {
     }
   }, []);
 
+  // ---- Globe unavailable (no WebGL, or it threw): degrade gracefully ----
+  // Keep the rest of the app alive and route users to the country picker
+  // instead of letting a globe failure take down the whole UI.
+  const handleGlobeUnavailable = useCallback(() => {
+    globeReadyRef.current = true;
+    setGlobeFailed(true);
+    setGlobeReady(true);
+  }, []);
+
+  // Pre-flight WebGL check so we never even mount the globe on unsupported
+  // devices (avoids the throw entirely).
+  useEffect(() => {
+    if (!isWebGLAvailable()) handleGlobeUnavailable();
+  }, [handleGlobeUnavailable]);
+
+  // When the globe can't run, open the picker so songs are one tap away.
+  useEffect(() => {
+    if (globeFailed) setPickerOpen(true);
+  }, [globeFailed]);
+
   // Dismiss the loading screen shortly after the globe is interactive.
   useEffect(() => {
     if (!globeReady) return;
@@ -206,35 +231,82 @@ export default function Home() {
       <div className="app-backdrop" />
       <StarField />
 
-      {/* Globe */}
-      <motion.div
-        initial={{ opacity: 0, scale: 0.92 }}
-        animate={{ opacity: globeReady ? 1 : 0, scale: globeReady ? 1 : 0.92 }}
-        transition={{ duration: 1.1, ease: "easeOut" }}
-        className="absolute inset-0 z-[2]"
-      >
-        <GlobeScene
-          countries={COUNTRIES}
-          selectedCode={selectedCode}
-          onSelect={handleSelect}
-          onHover={setHovered}
-          onReady={handleGlobeReady}
-          handleRef={globeHandle}
-        />
-      </motion.div>
+      {/* Globe — isolated behind an error boundary so a WebGL/driver failure
+          degrades to the country picker instead of crashing the whole app. */}
+      {!globeFailed && (
+        <motion.div
+          initial={{ opacity: 0, scale: 0.92 }}
+          animate={{ opacity: globeReady ? 1 : 0, scale: globeReady ? 1 : 0.92 }}
+          transition={{ duration: 1.1, ease: "easeOut" }}
+          className="absolute inset-0 z-[2]"
+        >
+          <ErrorBoundary onError={handleGlobeUnavailable}>
+            <GlobeScene
+              countries={COUNTRIES}
+              selectedCode={selectedCode}
+              onSelect={handleSelect}
+              onHover={setHovered}
+              onReady={handleGlobeReady}
+              handleRef={globeHandle}
+            />
+          </ErrorBoundary>
+        </motion.div>
+      )}
+
+      {/* Fallback when the 3D globe can't run */}
+      {globeFailed && (
+        <div className="absolute inset-0 z-[2] flex items-center justify-center p-6">
+          <motion.div
+            initial={{ opacity: 0, y: 16 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5 }}
+            className="glass-strong max-w-sm rounded-3xl p-8 text-center shadow-glass"
+          >
+            <div className="mb-3 text-5xl">🌐</div>
+            <h2 className="font-display text-xl font-bold text-white">
+              Globe needs WebGL
+            </h2>
+            <p className="mt-2 text-sm leading-relaxed text-white/60">
+              Your browser couldn&apos;t start the 3D view — but you can still
+              explore the world&apos;s music.
+            </p>
+            <button
+              type="button"
+              onClick={() => setPickerOpen(true)}
+              className="mt-5 rounded-full border border-accent/40 bg-accent/10 px-5 py-2.5 text-sm font-semibold text-accent transition-colors hover:bg-accent/20"
+            >
+              Browse countries
+            </button>
+          </motion.div>
+        </div>
+      )}
 
       {/* Top-left wordmark */}
       <div className="pointer-events-none absolute left-5 top-5 z-20 sm:left-8 sm:top-7">
         <TopBar />
       </div>
 
-      {/* Spin button — top-right (kept clear of the wordmark on phones) */}
+      {/* Top-right controls — Browse + Spin (kept clear of the wordmark) */}
       <div className="absolute right-4 top-4 z-20 sm:right-8 sm:top-7">
         <motion.div
           initial={{ opacity: 0, y: -16 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.7, delay: 0.3, ease: "easeOut" }}
+          className="flex items-center gap-2"
         >
+          <button
+            type="button"
+            onClick={() => setPickerOpen(true)}
+            aria-label="Browse countries"
+            title="Browse countries"
+            className="glass pointer-events-auto flex h-[42px] items-center gap-2 rounded-full px-4 text-sm font-semibold text-white/85 transition-colors hover:text-white"
+          >
+            <svg viewBox="0 0 24 24" className="h-4 w-4 fill-none stroke-current" strokeWidth={2} strokeLinecap="round">
+              <circle cx="11" cy="11" r="7" />
+              <path d="M21 21l-4.3-4.3" />
+            </svg>
+            <span className="hidden sm:inline">Browse</span>
+          </button>
           <SpinButton onSpin={handleSpin} spinning={spinning} />
         </motion.div>
       </div>
@@ -276,7 +348,7 @@ export default function Home() {
       </AnimatePresence>
 
       {/* Hint when nothing is selected */}
-      {!selectedCountry && globeReady && (
+      {!selectedCountry && globeReady && !globeFailed && (
         <motion.p
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
@@ -310,6 +382,15 @@ export default function Home() {
         onPrev={player.prev}
         onSeek={player.seek}
         onClose={player.stop}
+      />
+
+      {/* Searchable country picker (always available; also the globe fallback) */}
+      <CountryPicker
+        open={pickerOpen}
+        countries={COUNTRIES}
+        selectedCode={selectedCode}
+        onSelect={handleSelect}
+        onClose={() => setPickerOpen(false)}
       />
 
       {/* Intro loading screen */}
