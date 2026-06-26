@@ -396,6 +396,21 @@ export default function Home() {
         onClose={player.stop}
       />
 
+      {/* Credit */}
+      <div className="pointer-events-none fixed inset-x-0 bottom-2.5 z-10 flex justify-center">
+        <p className="text-[11px] font-medium tracking-wide text-white/35">
+          Made with <span className="text-ember">♥</span> by{" "}
+          <a
+            href="https://github.com/ShobhitTyagiiii"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="pointer-events-auto font-semibold text-white/55 transition-colors hover:text-accent"
+          >
+            Shobhit Tyagi
+          </a>
+        </p>
+      </div>
+
       {/* Searchable country picker (always available; also the globe fallback) */}
       <CountryPicker
         open={pickerOpen}
